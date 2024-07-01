@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from models import db, Restaurant, RestaurantPizza, Pizza
 from flask_migrate import Migrate
-from flask import Flask, request, make_response
+from flask import Flask, request, make_response, jsonify
 from flask_restful import Api, Resource
 import os
 
@@ -23,6 +23,97 @@ api = Api(app)
 @app.route("/")
 def index():
     return "<h1>Code challenge</h1>"
+
+
+
+@app.route("/restaurants", methods = ['GET'])
+def restaurants():
+    # restaurants = [restaurant.to_dict() for restaurant in Restaurant.query.all()]
+    # return restaurants
+    restaurants = []
+    for  i in Restaurant.query.all():
+
+        restaurant_json = {
+            "id": i.id,
+            "name": i.name,
+            "address": i.address,
+        }
+        restaurants.append(restaurant_json)
+        response = make_response(jsonify(restaurants), 200)
+
+    return response
+
+
+
+@app.route('/restaurants/<int:id>', methods = ['GET'])
+def get_restaurants_by_id(id):
+    # restaurants = [restaurant.to_dict() for restaurant in Restaurant.query.filter_by(id=id).first()]
+    # return restaurants
+    restaurant = Restaurant.query.filter_by(id=id).first()
+
+    if restaurant is None:
+        response = jsonify({"error": f"Restaurant with the id of {id} is not found"})
+        response.status_code = 404
+        return response  
+    
+
+    restaurant_jsonified = jsonify(restaurant.to_dict())
+    return restaurant_jsonified
+
+
+@app.route('/restaurants/<int:id>', methods = ['DELETE'])
+def delete_restaurants(id):
+    restaurant = Restaurant.query.filter_by(id=id).first()
+
+    if restaurant is None:
+        response = jsonify({"error": "Restaurant not found"})
+        response.status_code = 404
+        return response
+
+        
+    db.session.delete(restaurant)
+    db.session.commit()
+    # 204 No Content status code 
+    return '', 204
+
+
+
+@app.route('/pizzas', methods = ['GET'])
+def get_pizzas():
+    pizzas = []
+    for  i in Pizza.query.all():
+
+        pizza_json = {
+            "id": i.id,
+            "ingredients": i.ingredients,
+            "name": i.name,
+        }
+        pizzas.append(pizza_json)
+        response = make_response(jsonify(pizzas), 200)
+    return response
+    
+
+@app.route('/restaurant_pizzas', methods = ['POST'])
+def restaurant_pizzas():
+    json_data = request.get_json()
+
+    # Validate price to be between 1 and 30
+    price = json_data.get('price')
+    if not (1 <= price <= 30):
+        return jsonify({"errors": ["validation errors"]}), 400
+
+    restaurant_pizza = RestaurantPizza(
+        price=price,
+        pizza_id=json_data.get('pizza_id'),
+        restaurant_id=json_data.get('restaurant_id')
+    )
+    db.session.add(restaurant_pizza)
+    db.session.commit()
+
+    restaurant_pizza_dict = restaurant_pizza.to_dict()
+    return jsonify(restaurant_pizza_dict), 201
+
+
 
 
 if __name__ == "__main__":
