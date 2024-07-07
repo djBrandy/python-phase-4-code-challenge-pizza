@@ -52,7 +52,7 @@ def get_restaurants_by_id(id):
     restaurant = Restaurant.query.filter_by(id=id).first()
 
     if restaurant is None:
-        response = jsonify({"error": f"Restaurant with the id of {id} is not found"})
+        response = jsonify({"error": f"Restaurant not found"})
         response.status_code = 404
         return response  
     
@@ -97,7 +97,7 @@ def get_pizzas():
 def restaurant_pizzas():
     json_data = request.get_json()
 
-    # Validate price to be between 1 and 30
+    
     price = json_data.get('price')
     if not (1 <= price <= 30):
         return jsonify({"errors": ["validation errors"]}), 400
